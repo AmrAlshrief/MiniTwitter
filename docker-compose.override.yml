@@ -1,0 +1,28 @@
+services:
+  minitwitter.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+    ports:
+      - "8080"
+      - "8081"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  migration-runner:
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    volumes:
+      - .:/app
+    working_dir: /app/MiniTwitter.API
+    entrypoint: >
+      bash -c "dotnet tool install -g dotnet-ef &&
+               export PATH=/root/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin &&
+               dotnet ef database update --project ../MiniTwitter.Data --startup-project . --verbose"
+    depends_on:
+      - db
+    networks:
+      - mini-twitter-net
