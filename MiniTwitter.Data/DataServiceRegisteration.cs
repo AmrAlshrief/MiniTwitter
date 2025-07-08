@@ -19,9 +19,11 @@ namespace MiniTwitter.Data
             //services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<ICommentRepository, CommentRepository>();
-            services.AddScoped<ILikeRepository, LikeRepository>();
+            services.AddScoped<ICommentLikeRepository, CommentLikeRepository>();
+            services.AddScoped<ITweetLikeRepository, TweetLikeRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ITweetRepository, TweetRepository>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<IFollowRepository, FollowRepository>();
             return services;
         }

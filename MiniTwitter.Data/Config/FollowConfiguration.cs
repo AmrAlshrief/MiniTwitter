@@ -22,6 +22,16 @@ namespace MiniTwitter.Data.Config
                 .WithMany(u => u.Following)
                 .HasForeignKey(f => f.FollowingId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+
+            builder.HasIndex(f => f.FollowerId)
+                .HasDatabaseName("IX_FollowerId");
+                
+            builder.HasIndex(f => f.FollowingId)
+                .HasDatabaseName("IX_FollowingId");
+
+            builder.HasIndex(f => new { f.FollowerId, f.FollowingId }).IsUnique()
+                .HasDatabaseName("IX_FollowerId_FollowingId");
         }
     }
 }

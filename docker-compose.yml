@@ -2,14 +2,15 @@ services:
   minitwitter.api:
     image: ${DOCKER_REGISTRY-}minitwitterapi
     ports:
-      - "8080:8080"
-      - "8081:8081"
+      - "8180:8080"
+      - "8181:8081"
+     #  - "8082:8082"
     build:
       context: .
       dockerfile: MiniTwitter.API/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__Default=Server=db;Database=MiniTwitterDb;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=true
+      - ConnectionStrings__DefaultConnection=Server=db;Database=MiniTwitterDb;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=true
     
     depends_on:
       - db
@@ -22,9 +23,30 @@ services:
       SA_PASSWORD: "YourStrong!Pass123"
       ACCEPT_EULA: "Y"
     ports:
-      - "1400:1433"
+      - "1533:1433"
     volumes:
       - sqlvolume:/var/opt/mssql
+    networks:
+      - mini-twitter-net
+
+
+  migrate:
+    build:
+      context: .
+      dockerfile: MiniTwitter.API/Dockerfile
+      target: migrate-env    # <- important: use migrate-env target stage from Dockerfile
+    working_dir: /src/MiniTwitter.API
+    command:
+      [
+        "dotnet", "ef", "database", "update",
+        "--project", "../MiniTwitter.Data/MiniTwitter.Data.csproj",
+        "--startup-project", "."
+      ]
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=MiniTwitterDb;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=true
+    depends_on:
+      - db
     networks:
       - mini-twitter-net
 

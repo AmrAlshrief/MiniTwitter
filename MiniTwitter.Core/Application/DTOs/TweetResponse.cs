@@ -4,14 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniTwitter.Core.Domain.Entities
+namespace MiniTwitter.Core.Application.DTOs
 {
-    public class Like
+    public class TweetResponse
     {
         public int Id { get; set; }
+        public string Content { get; set; }
+        public DateTime CreatedAt { get; set; }
         public int UserId { get; set; }
-        public User User { get; set; }
-        public int TweetId { get; set; }
-        public Tweet Tweet { get; set; }
     }
 }

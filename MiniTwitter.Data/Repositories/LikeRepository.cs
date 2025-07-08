@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace MiniTwitter.Data.Repositories
 {
-    public class LikeRepository : GenericRepository<Like>, ILikeRepository
+    public class CommentLikeRepository : GenericRepository<CommentLike>, ICommentLikeRepository
     {
-        public LikeRepository(ApplicationDbContext context) : base(context)
+        public CommentLikeRepository(ApplicationDbContext context) : base(context)
         {
         }
     }

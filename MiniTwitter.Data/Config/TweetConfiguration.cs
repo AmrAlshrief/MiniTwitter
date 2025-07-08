@@ -19,6 +19,11 @@ namespace MiniTwitter.Data.Config
                 .WithMany(u => u.Tweets)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+
+            builder.HasIndex(t => t.CreatedAt);
+            builder.HasIndex(t => new { t.UserId, t.CreatedAt });
+
         }
     }
 }

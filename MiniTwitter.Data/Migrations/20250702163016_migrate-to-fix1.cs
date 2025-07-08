@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MiniTwitter.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class migratetofix1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -105,6 +105,34 @@ namespace MiniTwitter.Data.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Message = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ReceiverUserId = table.Column<int>(type: "int", nullable: true),
+                    SenderUserId = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_ReceiverUserId",
+                        column: x => x.ReceiverUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_SenderUserId",
+                        column: x => x.SenderUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -235,28 +263,66 @@ namespace MiniTwitter.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Likes",
+                name: "TweetLikes",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    TweetId = table.Column<int>(type: "int", nullable: false)
+                    TweetId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Likes", x => x.Id);
+                    table.PrimaryKey("PK_TweetLikes", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Likes_Tweets_TweetId",
+                        name: "FK_TweetLikes_Tweets_TweetId",
                         column: x => x.TweetId,
                         principalTable: "Tweets",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Likes_Users_UserId",
+                        name: "FK_TweetLikes_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id");
                 });
+
+            migrationBuilder.CreateTable(
+                name: "CommentLikes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    CommentId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommentLikes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CommentLikes_Comments_CommentId",
+                        column: x => x.CommentId,
+                        principalTable: "Comments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CommentLikes_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommentLikes_CommentId",
+                table: "CommentLikes",
+                column: "CommentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommentLikes_UserId",
+                table: "CommentLikes",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_ParentCommentId",
@@ -284,15 +350,14 @@ namespace MiniTwitter.Data.Migrations
                 column: "FollowingId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Likes_TweetId",
-                table: "Likes",
-                column: "TweetId");
+                name: "IX_Notifications_SenderUserId",
+                table: "Notifications",
+                column: "SenderUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Likes_UserId_TweetId",
-                table: "Likes",
-                columns: new[] { "UserId", "TweetId" },
-                unique: true);
+                name: "IX_ReceiverUserId_IsRead",
+                table: "Notifications",
+                columns: new[] { "ReceiverUserId", "IsRead" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_UserId",
@@ -303,6 +368,17 @@ namespace MiniTwitter.Data.Migrations
                 name: "IX_rolePermissions_PermissionId",
                 table: "rolePermissions",
                 column: "PermissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TweetLikes_TweetId",
+                table: "TweetLikes",
+                column: "TweetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TweetLikes_UserId_TweetId",
+                table: "TweetLikes",
+                columns: new[] { "UserId", "TweetId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tweets_UserId",
@@ -336,13 +412,13 @@ namespace MiniTwitter.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Comments");
+                name: "CommentLikes");
 
             migrationBuilder.DropTable(
                 name: "Follows");
 
             migrationBuilder.DropTable(
-                name: "Likes");
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");
@@ -351,19 +427,25 @@ namespace MiniTwitter.Data.Migrations
                 name: "rolePermissions");
 
             migrationBuilder.DropTable(
+                name: "TweetLikes");
+
+            migrationBuilder.DropTable(
                 name: "UserPermissions");
 
             migrationBuilder.DropTable(
                 name: "UserRoles");
 
             migrationBuilder.DropTable(
-                name: "Tweets");
+                name: "Comments");
 
             migrationBuilder.DropTable(
                 name: "Permissions");
 
             migrationBuilder.DropTable(
                 name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "Tweets");
 
             migrationBuilder.DropTable(
                 name: "Users");

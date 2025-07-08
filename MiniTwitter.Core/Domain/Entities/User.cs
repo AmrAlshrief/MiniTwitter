@@ -1,4 +1,4 @@
-﻿using MiniTwitter.Core.Domain.Entities.auth;
+using MiniTwitter.Core.Domain.Entities.auth;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -16,12 +16,17 @@ namespace MiniTwitter.Core.Domain.Entities
         public string PasswordHash { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsDeleted { get; set; } = false;
-        public string Role { get; set; } = "User"; //Optional
+        public string Role { get; set; } //Optional
         public bool IsActive { get; set; } = true;
+
+        // URL of the user's profile image stored on Cloudinary (optional)
+        public string? ProfilePictureUrl { get; set; }
+
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
         public ICollection<Tweet> Tweets { get; set; } = new List<Tweet>();
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
-        public ICollection<Like> Likes { get; set; } = new List<Like>();
+        public ICollection<TweetLike> TweetLikes { get; set; } = new List<TweetLike>();
         public ICollection<Follow> Followers { get; set; } = new List<Follow>();
         public ICollection<Follow> Following { get; set; } = new List<Follow>();
         public ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();

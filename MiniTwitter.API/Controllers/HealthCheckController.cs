@@ -29,7 +29,7 @@ namespace MiniTwitter.API.Controllers
                 // Attempt to open a connection to the database by running a simple query
                 await _context.Database.ExecuteSqlRawAsync("SELECT 1"); 
 
-                return Ok("Database connection is healthy.");
+                return Ok("Database connection is healthy. yes very");
             }
             catch (Exception ex)
             {
@@ -53,7 +53,7 @@ namespace MiniTwitter.API.Controllers
                 await Task.Delay(10); // Simulates a delay as if querying the DB
 
                 // Simulate a successful connection
-                return Ok("Database connection is healthy.");
+                return Ok("Database connection is healthy yes.");
             }
             catch (Exception ex)
             {

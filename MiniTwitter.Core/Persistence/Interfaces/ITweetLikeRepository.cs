@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniTwitter.Core.Application.Services.interfaces
+namespace MiniTwitter.Core.Persistence.Interfaces
 {
-    public interface ILikeService : IGenericService<Like>
+    public interface ITweetLikeRepository : IGenericRepository<TweetLike>
     {
     }
 }

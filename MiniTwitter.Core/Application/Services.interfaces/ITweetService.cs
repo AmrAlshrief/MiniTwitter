@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 
 namespace MiniTwitter.Core.Application.Services.interfaces
 {
-    public interface ITweetService : IGenericService<Tweet>
+    public interface ITweetService
     {
         Task<IEnumerable<Tweet>> GetTweetsByUserIdAsync(int userId);
+        Task<Tweet> AddTweetAsync(string content, int userId);
+        Task<Tweet> UpdateTweetAsync(int tweetId, string newContent, int userId);
+        Task DeleteTweetAsync(int tweetId, int userId);
     }
 }

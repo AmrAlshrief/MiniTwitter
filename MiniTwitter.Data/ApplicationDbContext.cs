@@ -16,8 +16,10 @@ namespace MiniTwitter.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Tweet> Tweets { get; set; }
         public DbSet<Follow> Follows { get; set; }
-        public DbSet<Like> Likes { get; set; }
+        public DbSet<CommentLike> CommentLikes { get; set; }
+        public DbSet<TweetLike> TweetLikes { get; set; }
         public DbSet<Comment> Comments { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<UserPermission> UserPermissions { get; set; }

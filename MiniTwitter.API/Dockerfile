@@ -11,6 +11,10 @@ EXPOSE 8080
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+
+# Disable fallback packages to avoid Windows path issues in Linux container
+ENV NUGET_FALLBACK_PACKAGES=""
+
 # Add EF CLI tool to the SDK image
 ENV PATH="$PATH:/root/.dotnet/tools"
 RUN dotnet tool install --global dotnet-ef
@@ -37,4 +41,9 @@ RUN dotnet publish "./MiniTwitter.API.csproj" -c $BUILD_CONFIGURATION -o /app/pu
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY MiniTwitter.API/appsettings.json ./appsettings.json
 ENTRYPOINT ["dotnet", "MiniTwitter.API.dll"]
+
+# --- New migration stage for running EF migrations ---
+FROM build AS migrate-env
+WORKDIR /src/MiniTwitter.API

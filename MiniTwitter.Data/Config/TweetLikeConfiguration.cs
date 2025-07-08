@@ -9,21 +9,21 @@ using System.Threading.Tasks;
 
 namespace MiniTwitter.Data.Config
 {
-    public class LikeConfiguration : IEntityTypeConfiguration<Like>
+    public class TweetLikeConfiguration : IEntityTypeConfiguration<TweetLike>
     {
-        public void Configure(EntityTypeBuilder<Like> builder)
+        public void Configure(EntityTypeBuilder<TweetLike> builder)
         {
 
 
             builder.HasIndex(l => new { l.UserId, l.TweetId }).IsUnique();
 
             builder.HasOne(l => l.User)
-                .WithMany(u => u.Likes)
+                .WithMany(u => u.TweetLikes)
                 .HasForeignKey(l => l.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             builder.HasOne(l => l.Tweet)
-                .WithMany(t => t.Likes)
+                .WithMany(t => t.TweetLikes)
                 .HasForeignKey(l => l.TweetId)
                 .OnDelete(DeleteBehavior.NoAction);
         }

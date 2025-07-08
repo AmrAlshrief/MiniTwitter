@@ -12,8 +12,8 @@ using MiniTwitter.Data;
 namespace MiniTwitter.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250324152317_init")]
-    partial class init
+    [Migration("20250702163016_migrate-to-fix1")]
+    partial class migratetofix1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,6 +63,32 @@ namespace MiniTwitter.Data.Migrations
                     b.ToTable("Comments");
                 });
 
+            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.CommentLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CommentLikes");
+                });
+
             modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Follow", b =>
                 {
                     b.Property<int>("Id")
@@ -89,7 +115,7 @@ namespace MiniTwitter.Data.Migrations
                     b.ToTable("Follows");
                 });
 
-            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Like", b =>
+            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Notification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -97,20 +123,33 @@ namespace MiniTwitter.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("TweetId")
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE(){}");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ReceiverUserId")
                         .HasColumnType("int");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("SenderUserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TweetId");
+                    b.HasIndex("SenderUserId");
 
-                    b.HasIndex("UserId", "TweetId")
-                        .IsUnique();
+                    b.HasIndex("ReceiverUserId", "IsRead")
+                        .HasDatabaseName("IX_ReceiverUserId_IsRead");
 
-                    b.ToTable("Likes");
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Tweet", b =>
@@ -139,6 +178,33 @@ namespace MiniTwitter.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Tweets");
+                });
+
+            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.TweetLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TweetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TweetId");
+
+                    b.HasIndex("UserId", "TweetId")
+                        .IsUnique();
+
+                    b.ToTable("TweetLikes");
                 });
 
             modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.User", b =>
@@ -340,6 +406,25 @@ namespace MiniTwitter.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.CommentLike", b =>
+                {
+                    b.HasOne("MiniTwitter.Core.Domain.Entities.Comment", "Comment")
+                        .WithMany()
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MiniTwitter.Core.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Follow", b =>
                 {
                     b.HasOne("MiniTwitter.Core.Domain.Entities.User", "Follower")
@@ -359,23 +444,21 @@ namespace MiniTwitter.Data.Migrations
                     b.Navigation("Following");
                 });
 
-            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Like", b =>
+            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Notification", b =>
                 {
-                    b.HasOne("MiniTwitter.Core.Domain.Entities.Tweet", "Tweet")
-                        .WithMany("Likes")
-                        .HasForeignKey("TweetId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                    b.HasOne("MiniTwitter.Core.Domain.Entities.User", "ReceiverUser")
+                        .WithMany("Notifications")
+                        .HasForeignKey("ReceiverUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("MiniTwitter.Core.Domain.Entities.User", "User")
-                        .WithMany("Likes")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                    b.HasOne("MiniTwitter.Core.Domain.Entities.User", "SenderUser")
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
-                    b.Navigation("Tweet");
+                    b.Navigation("ReceiverUser");
 
-                    b.Navigation("User");
+                    b.Navigation("SenderUser");
                 });
 
             modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.Tweet", b =>
@@ -385,6 +468,25 @@ namespace MiniTwitter.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.TweetLike", b =>
+                {
+                    b.HasOne("MiniTwitter.Core.Domain.Entities.Tweet", "Tweet")
+                        .WithMany("TweetLikes")
+                        .HasForeignKey("TweetId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("MiniTwitter.Core.Domain.Entities.User", "User")
+                        .WithMany("TweetLikes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Tweet");
 
                     b.Navigation("User");
                 });
@@ -466,7 +568,7 @@ namespace MiniTwitter.Data.Migrations
                 {
                     b.Navigation("Comments");
 
-                    b.Navigation("Likes");
+                    b.Navigation("TweetLikes");
                 });
 
             modelBuilder.Entity("MiniTwitter.Core.Domain.Entities.User", b =>
@@ -477,9 +579,11 @@ namespace MiniTwitter.Data.Migrations
 
                     b.Navigation("Following");
 
-                    b.Navigation("Likes");
+                    b.Navigation("Notifications");
 
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("TweetLikes");
 
                     b.Navigation("Tweets");
 
