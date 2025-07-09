@@ -20,7 +20,7 @@ namespace MiniTwitter.API.Controllers
         public async Task<IActionResult> GetHomeTimelineAsync(
             int userId,
             int limit = 20,
-            DateTime? cursor = null)
+            string? cursor = null)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace MiniTwitter.API.Controllers
         public async Task<IActionResult> GetUserTimelineAsync(
             string username,
             int limit = 20,
-            DateTime? cursor = null)
+            string? cursor = null)
         {
             try
             {

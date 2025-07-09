@@ -4,10 +4,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
-      # Cloudinary credentials
-      - CloudinarySettings__CloudName=dm0jaqos3
-      - CloudinarySettings__ApiKey=472933339124348
-      - CloudinarySettings__ApiSecret=QUhqnVdL5wszKu39la99DGgMRNA
+      # Cloudinary credentials (use env vars, not hardcoded)
+      - CloudinarySettings__CloudName=${CLOUDINARY_CLOUD_NAME}
+      - CloudinarySettings__ApiKey=${CLOUDINARY_API_KEY}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
     ports:
       - "8180:8080"
       - "8181:8081"

@@ -5,15 +5,15 @@ namespace MiniTwitter.Core.Application.Services.interfaces
 {
     public interface ITimelineService
     {
-        Task<IEnumerable<TweetDto>> GetHomeTimelineAsync(
-        int userId, 
-        int limit = 20, 
-        DateTime? cursor = null);
+        Task<TimelineResponse> GetHomeTimelineAsync(
+            int userId,
+            int limit = 20,
+            string? cursor = null);
 
-    Task<IEnumerable<TweetDto>> GetUserTimelineAsync(
-        string username, 
-        int limit = 20, 
-        DateTime? cursor = null);
+        Task<TimelineResponse> GetUserTimelineAsync(
+            string username,
+            int limit = 20,
+            string? cursor = null);
     }
 }
 
