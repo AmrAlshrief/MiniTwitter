@@ -4,16 +4,22 @@ services:
     ports:
       - "8180:8080"
       - "8181:8081"
-     #  - "8082:8082"
     build:
       context: .
       dockerfile: MiniTwitter.API/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=MiniTwitterDb;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=true
-    
+      - ASPNETCORE_ENVIRONMENT
+      - CONNECTIONSTRINGS__DEFAULTCONNECTION
+      - JWT__KEY
+      - CLOUDINARYSETTINGS__CLOUDNAME
+      - CLOUDINARYSETTINGS__APIKEY
+      - CLOUDINARYSETTINGS__APISECRET
+      - REDIS_CONNECTION=redis:6379
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
     depends_on:
       - db
+      - redis
     networks:
       - mini-twitter-net
 
@@ -28,13 +34,19 @@ services:
       - sqlvolume:/var/opt/mssql
     networks:
       - mini-twitter-net
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - mini-twitter-net
 
 
   migrate:
     build:
       context: .
       dockerfile: MiniTwitter.API/Dockerfile
-      target: migrate-env    # <- important: use migrate-env target stage from Dockerfile
+      target: migrate-env
     working_dir: /src/MiniTwitter.API
     command:
       [
@@ -43,10 +55,22 @@ services:
         "--startup-project", "."
       ]
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=MiniTwitterDb;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=true
+      - ASPNETCORE_ENVIRONMENT
+      - CONNECTIONSTRINGS__DEFAULTCONNECTION
+      - JWT__KEY
+      - CLOUDINARYSETTINGS__CLOUDNAME
+      - CLOUDINARYSETTINGS__APIKEY
+      - CLOUDINARYSETTINGS__APISECRET
+      - SENDGRID__APIKEY
+      - SENDGRID__FROM_EMAIL
+      - SENDGRID__FROM_NAME- 
+      - REDIS__CONNECTION=redis:6379
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+
     depends_on:
       - db
+      - redis
     networks:
       - mini-twitter-net
 

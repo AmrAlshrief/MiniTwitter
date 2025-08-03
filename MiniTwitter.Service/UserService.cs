@@ -8,37 +8,41 @@ using MiniTwitter.Infrastructure.ExternalServices.CloudinaryService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MiniTwitter.Service
 {
-    public class UserService : GenericService<User>, IUserService
+    public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IPasswordHasher _passwordHasher;
-    private readonly ICloudinaryService _cloudinaryService;
-
+        private readonly IGenericService<User> _genericService;
+        private readonly ICloudinaryService _cloudinaryService;
         private readonly ILogger<UserService> _logger;
+        private readonly ITweetLikeService _tweetLikeService;
 
         public UserService(IUserRepository userRepository,
+                           IGenericService<User> genericService,
                            ILogger<UserService> logger,
-                           IPasswordHasher passwordHasher,
-                           ICloudinaryService cloudinaryService) : base(userRepository)
+                           ICloudinaryService cloudinaryService,
+                           ITweetLikeService tweetLikeService)
         {
             _userRepository = userRepository;
-            _passwordHasher = passwordHasher;
+            _genericService = genericService;
             _cloudinaryService = cloudinaryService;
+            _logger = logger;
+            _tweetLikeService = tweetLikeService;
         }
 
         public async Task<User> GetUserByEmailAsync(string email)
         {
-            return await base.FindOneAsync(u => u.Email == email);
+            return await _genericService.FindOneAsync(u => u.Email == email);
         }
 
         public async Task<User> GetUserByUsernameAsync(string username)
         {
-            var user = await base.FindOneAsync(u => u.Username == username);
+            var user = await _genericService.FindOneAsync(u => u.Username == username);
 
             if (user == null)
                 throw new KeyNotFoundException("User not found");
@@ -48,7 +52,7 @@ namespace MiniTwitter.Service
 
         public async Task<User> IsUserActiveAsync(int userId)
         {
-            var user = await base.GetByIdAsync(userId);
+            var user = await _genericService.GetByIdAsync(userId);
             if (user == null || !user.IsActive)
             {
                 throw new UnauthorizedAccessException("User is not active or doesn't exist");
@@ -57,60 +61,37 @@ namespace MiniTwitter.Service
             return user;
         }
 
-        public async Task<User> LoginUserAsync(LoginDto user)
-        {
-            try
-            {
-                var foundUser = await base.FindOneAsync(u => u.Email == user.Email);
-                
-                if (foundUser == null || !_passwordHasher.VerifyHashedPassword(user.Password, foundUser.PasswordHash))
-                {
-                    throw new UnauthorizedAccessException("Invalid email or password.");
-                }
-                Console.WriteLine(foundUser);
-                return foundUser;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                //_logger.LogWarning($"Unauthorized access: {ex.Message}");
-                //Console.WriteLine("Not valid1");
-                throw new Exception(ex.Message);
-                
-            }
-            catch (Exception ex)
-            {
-                //_logger.LogError(ex, "An error occurred while logging in the user.");
-                //Console.WriteLine("Not valid2");
-                throw new Exception(ex.Message);
-                
-            }
-        }
-
         public async Task<UserDto> UpdateUserAsync(int userId, UpdateUserDto dto)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 throw new KeyNotFoundException("User not found");
+            
+            if (!string.IsNullOrWhiteSpace(dto.FirstName))
+                user.FirstName = dto.FirstName.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.LastName))
+                user.LastName = dto.LastName.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Bio))
+                user.Bio = dto.Bio.Trim();
 
             // Apply changes only for non-null fields
-            if (!string.IsNullOrWhiteSpace(dto.UserName) && dto.UserName != user.Username)
-            {
-                // Ensure uniqueness if needed
-                bool nameTaken = await _userRepository.ExistsAsync(u => u.Username == dto.UserName && u.Id != userId);
-                if (nameTaken)
-                    throw new ApplicationException("Username already exists.");
+            // if (!string.IsNullOrWhiteSpace(dto.UserName) && dto.UserName != user.Username)
+            // {
+            //     bool nameTaken = await _userRepository.ExistsAsync(u => u.Username == dto.UserName && u.Id != userId);
+            //     if (nameTaken)
+            //         throw new ApplicationException("Username already exists.");
 
-                user.Username = dto.UserName.Trim();
-            }
+            //     user.Username = dto.UserName.Trim();
+            // }
 
-            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
-            {
-                bool emailTaken = await _userRepository.ExistsAsync(u => u.Email == dto.Email && u.Id != userId);
-                if (emailTaken)
-                    throw new ApplicationException("Email already exists.");
+            // if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
+            // {
+            //     bool emailTaken = await _userRepository.ExistsAsync(u => u.Email == dto.Email && u.Id != userId);
+            //     if (emailTaken)
+            //         throw new ApplicationException("Email already exists.");
 
-                user.Email = dto.Email.Trim();
-            }
+            //     user.Email = dto.Email.Trim();
+            // }
 
             await _userRepository.UpdateAsync(user);
 
@@ -118,7 +99,10 @@ namespace MiniTwitter.Service
             {
                 Id = user.Id,
                 UserName = user.Username,
-                Email = user.Email
+                Email = user.Email,
+                Name = $"{user.FirstName} {user.LastName}".Trim(),
+                Bio = user.Bio,
+                ProfilePictureUrl = user.ProfilePictureUrl,
             };
         }
 
@@ -143,36 +127,44 @@ namespace MiniTwitter.Service
             };
         }
 
-        public async Task<string> RegisterUserAsync(RegisterDto user)
+
+
+        public async Task<UserProfileDto?> GetUserProfileAsync(string username)
         {
-            try
+            var user = await _userRepository.FindOneAsync(
+                u => u.Username == username,
+                u => u.Tweets
+            );
+
+            if (user == null) return null;
+
+        var tweets = new List<TweetDto>();
+        foreach (var tweet in user.Tweets.Where(t => !t.IsDeleted))
+        {
+            var likesCount = await _tweetLikeService.GetLikesCountAsync(tweet.Id);
+            tweets.Add(new TweetDto
             {
-                var userExists = await _userRepository.ExistsAsync(x => x.Email == user.Email || x.Username == user.UserName);
-                if (userExists)
-                {
-                    throw new ApplicationException("Email is already registered.");
-                }
-                var newUser = new User
-                {
-                    Username = user.UserName,
-                    Email = user.Email,
-                    Role = string.IsNullOrWhiteSpace(user.Role) ? "User" : user.Role,
-                    IsActive = true,
-                    PasswordHash = _passwordHasher.HashPassword(user.Password)
-                };
-                await _userRepository.AddAsync(newUser);
-                return "User Registered Successfully!";
-            }
-            catch (ApplicationException ex)
-            {
-                _logger.LogWarning($"Validation error: {ex.Message}");
-                throw;
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while registering the user.");
-                throw new Exception("An Unexpected error occured. Please try again later. ");
-            }
+                Id = tweet.Id,
+                Content = tweet.Content,
+                CreatedAt = tweet.CreatedAt,
+                LikesCount = likesCount,
+            });
+        }
+
+        return new UserProfileDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Name = $"{user.FirstName} {user.LastName}".Trim(),
+            Bio = user.Bio,
+            ProfilePicture = user.ProfilePictureUrl,
+            Tweets = tweets
+        };
+}
+
+        public async Task<IEnumerable<User>> GetAllAsync()
+        {
+            return await _genericService.GetAllAsync();
         }
     }
 }

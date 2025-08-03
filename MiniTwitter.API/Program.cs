@@ -11,6 +11,14 @@ using Microsoft.Extensions.Options;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using MiniTwitter.Infrastructure.ExternalServices.CloudinaryService;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using StackExchange.Redis;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Extensions.Caching.Distributed;
+using MiniTwitter.Core.Application.Services.interfaces;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+
 
 namespace MiniTwitter.API
 {
@@ -19,32 +27,6 @@ namespace MiniTwitter.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-
-            //builder.WebHost.ConfigureKestrel(options =>
-            //{
-            //    if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
-            //    {
-            //        // Inside Docker - only listen on HTTP
-            //        options.ListenAnyIP(8080); // HTTP only
-            //    }
-            //    else
-            //    {
-            //        // Outside Docker - use HTTPS if desired
-            //        options.ListenAnyIP(5000); // HTTP
-            //        options.ListenAnyIP(5001, listenOptions =>
-            //        {
-            //            listenOptions.UseHttps();
-            //        });
-            //    }
-            //});
-
-            //builder.WebHost.ConfigureKestrel(options =>
-            //{
-            //    options.ListenAnyIP(8080); // match EXPOSE 8080
-            //});
-
-
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
              ?? Environment.GetEnvironmentVariable("DefaultConnection");
@@ -61,6 +43,14 @@ namespace MiniTwitter.API
             builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
             builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
+            // Redis setup
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp => 
+            { 
+                var configuration = builder.Configuration.GetConnectionString("Redis"); 
+                var options = ConfigurationOptions.Parse(configuration);
+                options.AbortOnConnectFail = false;
+                return ConnectionMultiplexer.Connect(options); 
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -69,7 +59,18 @@ namespace MiniTwitter.API
             builder.Services.Configure<JwtSettings>(
             builder.Configuration.GetSection("JwtSettings"));
 
-            builder.Services.AddAuthentication("Bearer")
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddGoogle(options =>
+            {
+                options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+                options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+                options.CallbackPath = "/signin-google"; // default
+            })
             .AddJwtBearer("Bearer", options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -83,12 +84,53 @@ namespace MiniTwitter.API
                     IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    logger.LogInformation("OnTokenValidated called");
+                    
+                    // Extract JTI from claims instead of SecurityToken
+                    var jtiClaim = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti);
+                    if (jtiClaim == null)
+                    {
+                        logger.LogWarning("JTI claim not found in token");
+                        return;
+                    }
+
+                    var cacheService = context.HttpContext.RequestServices.GetRequiredService<ICacheService>();
+                    var jti = jtiClaim.Value;
+                    logger.LogInformation($"Checking blacklist for JTI: {jti}");
+
+                    if (string.IsNullOrEmpty(jti))
+                    {
+                        logger.LogWarning("JTI is null or empty");
+                        return;
+                    }
+
+                    var blacklistKey = $"blacklist:{jti}";
+                    var isBlacklisted = await cacheService.ExistsAsync(blacklistKey);
+                    logger.LogInformation($"Blacklist check for key '{blacklistKey}': {isBlacklisted}");
+                    
+                    if (isBlacklisted)
+                    {
+                        logger.LogWarning($"Token with JTI {jti} is blacklisted");
+                        context.Fail("Token is blacklisted.");
+                    }
+                    else
+                    {
+                        logger.LogInformation($"Token with JTI {jti} is valid (not blacklisted)");
+                    }
+                }
+                };
             });
 
 
             builder.Services.AddCors(options =>
             {
-                options.AddDefaultPolicy(policy =>
+                options.AddPolicy("AllowFrontend", policy =>
                 {
                     policy.WithOrigins("http://localhost:5173")
                           .AllowAnyHeader()
@@ -106,10 +148,10 @@ namespace MiniTwitter.API
             {
                 app.MapOpenApi();
             }
+            app.UseRouting();
+            // app.UseHttpsRedirection();
 
-            app.UseHttpsRedirection();
-
-            app.UseCors(); // Enable CORS for all endpoints
+            app.UseCors("AllowFrontend"); // Enable CORS for all endpoints
 
             //app.UseExceptionHandling();
             app.UseAuthentication();

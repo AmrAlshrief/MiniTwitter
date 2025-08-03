@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MiniTwitter.Core.Application.Services.interfaces;
 using MiniTwitter.Core.Persistence.Interfaces;
 using MiniTwitter.Data.Repositories;
@@ -19,7 +19,6 @@ namespace MiniTwitter.Data
             //services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<ICommentRepository, CommentRepository>();
-            services.AddScoped<ICommentLikeRepository, CommentLikeRepository>();
             services.AddScoped<ITweetLikeRepository, TweetLikeRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ITweetRepository, TweetRepository>();

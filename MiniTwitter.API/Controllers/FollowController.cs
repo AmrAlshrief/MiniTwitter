@@ -94,5 +94,26 @@ namespace MiniTwitter.API.Controllers
                 return StatusCode(500, new { message = "An error occured.", detail = ex.Message });
             }
         }
+
+        [HttpGet("is-following/{followingId}")]
+        [Authorize]
+        public async Task<IActionResult> IsFollowing(int followingId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+                return Unauthorized("User ID not found");
+
+            int followerId = int.Parse(userIdClaim.Value);
+
+            try
+            {
+                var isFollowing = await _followService.IsFollowingAsync(followerId, followingId);
+                return Ok(new { isFollowing });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred.", detail = ex.Message });
+            }
+        }
     }
 }

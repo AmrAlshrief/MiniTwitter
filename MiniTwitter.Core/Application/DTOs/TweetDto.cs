@@ -7,9 +7,9 @@ namespace MiniTwitter.Core.Application.DTOs
         public int Id { get; set; }
         public string Content { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
-        public int LikeCount { get; set; }
+        public int LikesCount { get; set; } 
         public bool IsLikedByCurrentUser { get; set; }
-        public UserPreviewDto User { get; set; } 
+        public UserPreviewDto User { get; set; }
     }
 
 }

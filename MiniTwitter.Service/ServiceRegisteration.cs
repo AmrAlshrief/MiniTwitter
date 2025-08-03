@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MiniTwitter.Core.Application.Services.interfaces;
 using MiniTwitter.Core.Application.Services.Interfaces;
 using MiniTwitter.Infrastructure.Authentication;
@@ -18,7 +18,9 @@ namespace MiniTwitter.Service
             services.AddScoped<ITweetService, TweetService>();
             services.AddScoped<ITweetLikeService, TweetLikeService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<ICommentService, CommentService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITimelineService, TimelineService>();
             services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));

@@ -5,9 +5,13 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
       # Cloudinary credentials (use env vars, not hardcoded)
-      - CloudinarySettings__CloudName=${CLOUDINARY_CLOUD_NAME}
-      - CloudinarySettings__ApiKey=${CLOUDINARY_API_KEY}
-      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - CLOUDINARYSETTINGS__CLOUDNAME=${CLOUDINARYSETTINGS__CLOUDNAME}
+      - CLOUDINARYSETTINGS__APIKEY=${CLOUDINARYSETTINGS__APIKEY}
+      - CLOUDINARYSETTINGS__APISECRET=${CLOUDINARYSETTINGS__APISECRET}
+      - SENDGRID__APIKEY=${SENDGRID__APIKEY}
+      - SENDGRID__FROM_EMAIL=${SENDGRID__FROM_EMAIL}
+      - SENDGRID__FROM_NAME=${SENDGRID__FROM_NAME}
+      
     ports:
       - "8180:8080"
       - "8181:8081"

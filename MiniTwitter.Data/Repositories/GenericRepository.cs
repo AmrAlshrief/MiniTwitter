@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiniTwitter.Core.Persistence.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -43,6 +43,32 @@ namespace MiniTwitter.Data.Repositories
             return await _context.Set<T>().FirstOrDefaultAsync(predicate);
         }
 
+        public async Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task<T?> FindOneAsync(
+            Expression<Func<T, bool>> predicate,
+            Func<IQueryable<T>, IQueryable<T>> include = null)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            return await query.FirstOrDefaultAsync(predicate);
+        }
+
         public async Task<IEnumerable<T>> GetAllAsync()
         {
            return await _dbSet.ToListAsync();
@@ -76,5 +102,25 @@ namespace MiniTwitter.Data.Repositories
 
             return await query.ToListAsync();
         }
+
+        public IQueryable<T> QueryAll(Expression<Func<T, bool>> predicate)
+        {
+            return _dbSet.Where(predicate);
+        }
+
+        public IQueryable<T> QueryAll(
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet.Where(predicate);
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return query;
+        }
+            
     }
 }

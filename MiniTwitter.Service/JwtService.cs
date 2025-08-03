@@ -25,11 +25,13 @@ namespace MiniTwitter.Service
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var jti = Guid.NewGuid().ToString(); // Generate unique JWT ID
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim("role", user.Role)
+                new Claim("role", user.Role),
+                new Claim(JwtRegisteredClaimNames.Jti, jti)
             };
 
             var token = new JwtSecurityToken(

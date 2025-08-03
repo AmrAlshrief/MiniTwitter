@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniTwitter.Core.Application.DTOs;
 using MiniTwitter.Core.Application.Services.interfaces;
-using MiniTwitter.Infrastructure.Authentication;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
@@ -13,45 +12,10 @@ namespace MiniTwitter.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        public UserController(IUserService userService, IJwtTokenGenerator jwtTokenGenerator)
+        
+        public UserController(IUserService userService)
         {
             _userService = userService;
-            _jwtTokenGenerator = jwtTokenGenerator;
-        }
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDto registerDto)
-        {
-            try 
-            {
-                var result = await _userService.RegisterUserAsync(registerDto);
-                return Ok(new { message = result });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-         
-        }
-        [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto login)
-        {
-            try 
-            {
-                var user = await _userService.LoginUserAsync(login);
-                if (user == null)
-                    return Unauthorized("User not authorized");
-                var token = _jwtTokenGenerator.GenerateToken(user);
-                
-
-                return Ok(new {token});
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Something wrong");
-                return Unauthorized(ex.Message);
-            }
-           
         }
 
         [Authorize]
@@ -67,8 +31,8 @@ namespace MiniTwitter.API.Controllers
         }
 
         [Authorize]
-        [HttpPut("me")]
-        public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto dto)
+        [HttpPut("Update")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto dto)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
@@ -98,7 +62,9 @@ namespace MiniTwitter.API.Controllers
             {
                 Id = user.Id,
                 UserName = user.Username,
+                Name = $"{user.FirstName} {user.LastName}".Trim(),
                 Email = user.Email,
+                Bio = user.Bio,
                 Role = user.Role,
                 ProfileImage = user.ProfilePictureUrl
             };
@@ -125,6 +91,55 @@ namespace MiniTwitter.API.Controllers
             }
            
         }
+        [Authorize]
+        [HttpGet("profile/{username}")]
+        public async Task<IActionResult> GetUserProfile(string username)
+        {
+            try
+            {
+                var userProfile = await _userService.GetUserProfileAsync(username);
+                if (userProfile == null)
+                    return NotFound(new { message = "User not found" });
+
+                return Ok(userProfile);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("{username}")]
+        public async Task<IActionResult> GetUserByUsername(string username)
+        {
+            try
+            {
+                var user = await _userService.GetUserByUsernameAsync(username);
+                if (user == null)
+                    return NotFound(new { message = "User not found" });
+
+                var result = new UserWithRoleDto
+                {
+                    Id = user.Id,
+                    UserName = user.Username,
+                    Name = $"{user.FirstName} {user.LastName}".Trim(),
+                    Email = user.Email,
+                    Bio = user.Bio,
+                    Role = user.Role,
+                    ProfileImage = user.ProfilePictureUrl
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        
+
     }
     
 }

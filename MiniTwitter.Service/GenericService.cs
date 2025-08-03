@@ -33,6 +33,11 @@ namespace MiniTwitter.Service
         {
             return await _repository.FindOneAsync(predicate);
         }
+
+        public async Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        {
+            return await _repository.FindOneAsync(predicate, includes);
+        }
         public async Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> predicate)
         {
             return await _repository.FindAllAsync(predicate);
@@ -52,6 +57,16 @@ namespace MiniTwitter.Service
         public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate) 
         {
             return await _repository.ExistsAsync(predicate);
+        }
+
+        public IQueryable<T> QueryAll(Expression<Func<T, bool>> predicate)
+        {
+            return _repository.QueryAll(predicate);
+        }
+
+        public IQueryable<T> QueryAll(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        {
+            return _repository.QueryAll(predicate, includes);
         }
     }
 }
